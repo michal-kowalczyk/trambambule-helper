@@ -1,0 +1,13 @@
+RandomGeneratorParams = interface +o +j {
+  getMinBound(): i32;
+  getMaxBound(): i32;
+}
+
+RandomGenerator = interface +c {
+  getRandom(params: RandomGeneratorParams): i32;
+}
+
+Test = interface +c {
+  static test(): string;
+  static getRandomGenerator(): RandomGenerator;
+}
