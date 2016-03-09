@@ -12,6 +12,15 @@ Project illustrates how to perform:
 - a simple call in Java/Swift to C++,
 - a call in Java/Swift to C++ with an object implemented in Java/Swift passed that can be used in C++ code in order to give a result back to Java/Swift code.
 
+Requirements
+
+- python
+- Android
+  - android ndk and ndk-build on your PATH to build for android
+  - android ndk path provided in ```android_project/DjinniDemo/local.properties``` (as in [example](android_project/DjinniDemo/local.properties.example))
+- iOS
+  - xcode & xcodebuild
+
 In order to build projects, run:
 
 - ```make ios```
