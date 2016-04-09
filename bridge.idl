@@ -1,13 +1,32 @@
-RandomGeneratorParams = interface +o +j {
-  getMinBound(): i32;
-  getMaxBound(): i32;
+Team = enum {
+  red;
+  blue;
 }
 
-RandomGenerator = interface +c {
-  getRandom(params: RandomGeneratorParams): i32;
+RepositionEvent = record {
+  team: Team;
+  point: i32;
+  x: i32;
+  y: i32;
 }
 
-Test = interface +c {
-  static test(): string;
-  static getRandomGenerator(): RandomGenerator;
+UISettings = record {
+  left: i32;
+  top: i32;
+  right: i32;
+  bottom: i32;
+  spacing: i32;
+}
+
+RepositionListener = interface +o +j {
+  onReposition(e: RepositionEvent);
+}
+
+Game = interface +c {
+  static create(uiSettings: UISettings, totalPoints: i32): Game;
+  getPointSize(): i32;
+  setRepositionListener(l: RepositionListener);
+  startGame();
+  gainPoint(t: Team);
+  losePoint(t: Team);
 }
