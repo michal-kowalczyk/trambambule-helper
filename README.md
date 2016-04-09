@@ -1,4 +1,4 @@
-# djinni4swift
+# trambambule helper (a.k.a. table soccer helper)
 
 This project is meant to be a helper during Djinni's presentations. It consists of:
 
