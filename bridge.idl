@@ -3,14 +3,7 @@ Team = enum {
   blue;
 }
 
-RepositionEvent = record {
-  team: Team;
-  point: i32;
-  x: i32;
-  y: i32;
-}
-
-UISettings = record {
+PointsCanvasMetrics = record {
   left: i32;
   top: i32;
   right: i32;
@@ -18,15 +11,28 @@ UISettings = record {
   spacing: i32;
 }
 
-RepositionListener = interface +o +j {
-  onReposition(e: RepositionEvent);
+PointCreationEvent = record {
+  team: Team;
+  id: i32;
+  x: i32;
+  y: i32;
+  size: i32;
+}
+
+PointRepositionEvent = record {
+  team: Team;
+  id: i32;
+  x: i32;
+  y: i32;
+}
+
+PointListener = interface +o +j {
+  onCreation(e: PointCreationEvent);
+  onReposition(e: PointRepositionEvent);
 }
 
 Game = interface +c {
-  static create(uiSettings: UISettings, totalPoints: i32): Game;
-  getPointSize(): i32;
-  setRepositionListener(l: RepositionListener);
-  startGame();
+  static create(metrics: PointsCanvasMetrics, totalPoints: i32, l: PointListener): Game;
   gainPoint(t: Team);
   losePoint(t: Team);
 }

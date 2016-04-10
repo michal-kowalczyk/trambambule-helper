@@ -1,15 +1,18 @@
 #include "Game.hpp"
-#include "RepositionEvent.hpp"
-#include "RepositionListener.hpp"
-#include "UISettings.hpp"
+#include "PointCreationEvent.hpp"
+#include "PointRepositionEvent.hpp"
+#include "PointListener.hpp"
+#include "PointsCanvasMetrics.hpp"
 #include <memory>
 
 namespace djinnidemo {
 
 class GameImpl : public Game {
  public:
-  GameImpl(const UISettings& ui, int32_t totalPoints)
+  GameImpl(const PointsCanvasMetrics& ui, int32_t totalPoints,
+      const std::shared_ptr<PointListener>& l)
     : totalPoints_(totalPoints),
+      listener_(l),
       pointSize_((ui.bottom - ui.top) / (totalPoints + 1) - ui.spacing),
       redPt0X_(ui.left),
       redPt0Y_(ui.top),
@@ -19,23 +22,7 @@ class GameImpl : public Game {
       blueShift_(-redShift_),
       redPoints_(0),
       bluePoints_(0) {
-  }
-
-  int32_t getPointSize() {
-    return pointSize_;
-  }
-
-  void setRepositionListener(const std::shared_ptr<RepositionListener>& l) {
-    listener_ = l;
-  }
-  
-  void startGame() {
-    for (int32_t i = 0; i < totalPoints_; ++i) {
-      RepositionEvent e1(Team::RED, i, redPt0X_, i * redShift_ + redPt0Y_);
-      listener_->onReposition(e1);
-      RepositionEvent e2(Team::BLUE, i, bluePt0X_, i * blueShift_ + bluePt0Y_);
-      listener_->onReposition(e2);
-    }
+    createPoints(pointSize_);
   }
 
   void gainPoint(Team t) {
@@ -55,6 +42,17 @@ class GameImpl : public Game {
   }
 
  private:
+  void createPoints(int32_t pointSize) {
+    for (int32_t i = 0; i < totalPoints_; ++i) {
+      PointCreationEvent e1(Team::RED,
+          i, redPt0X_, i * redShift_ + redPt0Y_, pointSize);
+      listener_->onCreation(e1);
+      PointCreationEvent e2(Team::BLUE,
+          i, bluePt0X_, i * blueShift_ + bluePt0Y_, pointSize);
+      listener_->onCreation(e2);
+    }
+  }
+
   void gainPt(Team t, int32_t& points, int32_t pt0X, int32_t pt0Y, int32_t shift) {
     if (points >= totalPoints_) {
       return;
@@ -62,7 +60,7 @@ class GameImpl : public Game {
     ++points;
     int32_t pointId = totalPoints_ - points;
     int32_t pos = pointId + 1;
-    RepositionEvent e(t, pointId, pt0X, pos * shift + pt0Y);
+    PointRepositionEvent e(t, pointId, pt0X, pos * shift + pt0Y);
     listener_->onReposition(e);
   }
 
@@ -73,28 +71,29 @@ class GameImpl : public Game {
     int32_t pointId = totalPoints_ - points;
     int32_t pos = pointId;
     --points;
-    RepositionEvent e(t, pointId, pt0X, pos * shift + pt0Y);
+    PointRepositionEvent e(t, pointId, pt0X, pos * shift + pt0Y);
     listener_->onReposition(e);
   }
 
   const int32_t totalPoints_;
 
-  std::shared_ptr<RepositionListener> listener_;
+  std::shared_ptr<PointListener> listener_;
 
-  int32_t pointSize_;
-  int32_t redPt0X_;
-  int32_t redPt0Y_;
-  int32_t bluePt0X_;
-  int32_t bluePt0Y_;
-  int32_t redShift_;
-  int32_t blueShift_;
+  const int32_t pointSize_;
+  const int32_t redPt0X_;
+  const int32_t redPt0Y_;
+  const int32_t bluePt0X_;
+  const int32_t bluePt0Y_;
+  const int32_t redShift_;
+  const int32_t blueShift_;
 
   int32_t redPoints_;
   int32_t bluePoints_;
 };
 
-std::shared_ptr<Game> Game::create(const UISettings& ui, int32_t totalPoints) {
-  return std::make_shared<GameImpl>(ui, totalPoints);
+std::shared_ptr<Game> Game::create(const PointsCanvasMetrics& metrics,
+    int32_t totalPoints, const std::shared_ptr<PointListener>& listener) {
+  return std::make_shared<GameImpl>(metrics, totalPoints, listener);
 }
 
 }  // namespace djinnidemo

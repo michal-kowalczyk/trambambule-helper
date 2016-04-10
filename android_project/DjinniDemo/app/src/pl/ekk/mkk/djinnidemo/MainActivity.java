@@ -36,45 +36,56 @@ public class MainActivity extends AppCompatActivity {
     private int redDiceId;
     private int blueDiceId;
 
-    private ImageView[] redPoints;
-    private ImageView[] bluePoints;
-
     static {
         System.loadLibrary("cpp_jni");
     }
 
     private Game game;
 
-    private void registerResetButtonListener() {
-        resetButton.setOnClickListener(new View.OnClickListener() {
+    private View.OnClickListener createResetButtonListener() {
+        return new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                UISettings uiSettings = new UISettings(leftMargin, topMargin,
+                viewGroup.removeAllViews();
+
+                PointsCanvasMetrics canvasMetrics = new PointsCanvasMetrics(leftMargin, topMargin,
                         viewGroupWidth - rightMargin, viewGroupHeight - bottomMargin, spacing);
-                game = Game.create(uiSettings, totalPoints);
-                game.setRepositionListener(new RepositionListener() {
+                game = Game.create(canvasMetrics, totalPoints, new PointListener() {
+                    private ImageView[] redPoints = new ImageView[totalPoints];
+                    private ImageView[] bluePoints = new ImageView[totalPoints];
+
                     @Override
-                    public void onReposition(RepositionEvent e) {
+                    public void onCreation(PointCreationEvent e) {
+                        ImageView imageView = new ImageView(MainActivity.this);
+                        if (e.getTeam() == Team.RED) {
+                            imageView.setImageResource(redDiceId);
+                            redPoints[e.getId()] = imageView;
+                        } else {
+                            imageView.setImageResource(blueDiceId);
+                            bluePoints[e.getId()] = imageView;
+                        }
+                        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(e.getSize(), e.getSize());
+                        lp.leftMargin = e.getX();
+                        lp.topMargin = e.getY();
+                        viewGroup.addView(imageView, lp);
+                    }
+
+                    @Override
+                    public void onReposition(PointRepositionEvent e) {
                         ImageView[] pointsArray = (e.getTeam() == Team.RED ? redPoints : bluePoints);
-                        ImageView iv = pointsArray[e.getPoint()];
+                        ImageView iv = pointsArray[e.getId()];
                         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) iv.getLayoutParams();
                         lp.leftMargin = e.getX();
                         lp.topMargin = e.getY();
                         iv.setLayoutParams(lp);
                     }
                 });
-
-                int pointSize = game.getPointSize();
-                viewGroup.removeAllViews();
-                createImgViews(pointSize);
-
-                game.startGame();
             }
-        });
+        };
     }
 
-    private void registerSwipes() {
-        viewGroup.setOnTouchListener(new OnSwipeTouchListener(MainActivity.this) {
+    private OnSwipeTouchListener createOnSwipeListener() {
+        return new OnSwipeTouchListener(MainActivity.this) {
             public void onSwipeTop(int avgX) {
                 if (game == null) {
                     return;
@@ -96,25 +107,7 @@ public class MainActivity extends AppCompatActivity {
                     game.gainPoint(Team.RED);
                 }
             }
-        });
-    }
-
-    private void createImgViews(int pointSize) {
-        redPoints = new ImageView[totalPoints];
-        bluePoints = new ImageView[totalPoints];
-
-        for (int i = 0; i < totalPoints; ++i) {
-            ImageView imageView = new ImageView(MainActivity.this);
-            imageView.setImageResource(redDiceId);
-            viewGroup.addView(imageView, new FrameLayout.LayoutParams(pointSize, pointSize));
-            redPoints[i] = imageView;
-
-            imageView = new ImageView(MainActivity.this);
-            imageView.setImageResource(blueDiceId);
-            viewGroup.addView(imageView, new FrameLayout.LayoutParams(pointSize, pointSize));
-            bluePoints[i] = imageView;
-        }
-
+        };
     }
 
     @Override
@@ -162,8 +155,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         updateTotalPointsTextView();
-        registerResetButtonListener();
-        registerSwipes();
+        resetButton.setOnClickListener(createResetButtonListener());
+        viewGroup.setOnTouchListener(createOnSwipeListener());
     }
 
     private void updateTotalPointsTextView() {

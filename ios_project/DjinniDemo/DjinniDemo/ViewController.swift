@@ -8,43 +8,47 @@
 
 import UIKit
 
-class PointsView: UIView, DJINNIDEMORepositionListener {
+class PointsView: UIView, DJINNIDEMOPointListener {
     private let leftMargin:Int32 = 1
     private let topMargin:Int32 = 1
     private let rightMargin:Int32 = 1
     private let bottomMargin:Int32 = 1
     private let spacing:Int32 = 1
 
-    private var team1PointsUIViews:[UIImageView] = []
-    private var team2PointsUIViews:[UIImageView] = []
-    private let team1ImgName = "red-dice.png"
-    private let team2ImgName = "blue-dice.png"
+    private var redTeamPointsUIViews:[UIImageView] = []
+    private var blueTeamPointsUIViews:[UIImageView] = []
+    private let redTeamImage = UIImage(named: "red-dice.png")
+    private let blueTeamImage = UIImage(named: "blue-dice.png")
     private var swipeUpRecognizer = UISwipeGestureRecognizer()
     private var swipeDownRecognizer = UISwipeGestureRecognizer()
     
     private var game: DJINNIDEMOGame?
     
     func reset(totalPoints: Int32) {
-        let width = Int32(frame.width)
-        let height = Int32(frame.height)
+        removeViews(&redTeamPointsUIViews)
+        removeViews(&blueTeamPointsUIViews)
 
-        let uiSettings = DJINNIDEMOUISettings(left: leftMargin, top: topMargin, right: width - rightMargin, bottom: height - bottomMargin, spacing: spacing)
+        let canvasMetrics = DJINNIDEMOPointsCanvasMetrics(left: leftMargin, top: topMargin, right: Int32(frame.width) - rightMargin, bottom: Int32(frame.height) - bottomMargin, spacing: spacing)
         
-        game = DJINNIDEMOGame.create(uiSettings, totalPoints: totalPoints)
-        game?.setRepositionListener(self)
-
-        let pointSize = Int((game?.getPointSize())!)
-
-        removeViews(&team1PointsUIViews)
-        removeViews(&team2PointsUIViews)
-        createImgViews(totalPoints, pointSize: pointSize)
-        
-        game?.startGame()
+        game = DJINNIDEMOGame.create(canvasMetrics, totalPoints: totalPoints, l: self)
     }
     
-    @objc func onReposition(e: DJINNIDEMORepositionEvent) {
-        let uiViews = (e.team == DJINNIDEMOTeam.Red ? team1PointsUIViews : team2PointsUIViews)
-        let imgView = uiViews[Int(e.point)]
+    @objc func onCreation(e: DJINNIDEMOPointCreationEvent) {
+        let imageView = UIImageView()
+        if e.team == .Red {
+            imageView.image = redTeamImage
+            redTeamPointsUIViews.append(imageView)
+        } else {
+            imageView.image = blueTeamImage
+            blueTeamPointsUIViews.append(imageView)
+        }
+        imageView.frame = CGRect(x: Int(e.x), y: Int(e.y), width: Int(e.size), height: Int(e.size))
+        addSubview(imageView)
+    }
+    
+    @objc func onReposition(e: DJINNIDEMOPointRepositionEvent) {
+        let uiViews = (e.team == .Red ? redTeamPointsUIViews : blueTeamPointsUIViews)
+        let imgView = uiViews[Int(e.id)]
         let pointSize = Int(imgView.frame.width)
         imgView.frame = CGRect(x: Int(e.x), y: Int(e.y), width: pointSize, height: pointSize)
     }
@@ -53,9 +57,9 @@ class PointsView: UIView, DJINNIDEMORepositionListener {
         guard let game = game else { return }
         let touchUpPoint = swipeUpRecognizer.locationInView(self)
         if touchUpPoint.x > frame.width / 2 {
-            game.gainPoint(DJINNIDEMOTeam.Blue)
+            game.gainPoint(.Blue)
         } else {
-            game.losePoint(DJINNIDEMOTeam.Red)
+            game.losePoint(.Red)
         }
     }
     
@@ -63,10 +67,17 @@ class PointsView: UIView, DJINNIDEMORepositionListener {
         guard let game = game else { return }
         let touchUpPoint = swipeDownRecognizer.locationInView(self)
         if touchUpPoint.x > frame.width / 2 {
-            game.losePoint(DJINNIDEMOTeam.Blue)
+            game.losePoint(.Blue)
         } else {
-            game.gainPoint(DJINNIDEMOTeam.Red)
+            game.gainPoint(.Red)
         }
+    }
+    
+    private func removeViews(inout uiViews:[UIImageView]) {
+        for view in uiViews {
+            view.removeFromSuperview()
+        }
+        uiViews.removeAll(keepCapacity: true)
     }
     
     override init(frame: CGRect) {
@@ -86,30 +97,6 @@ class PointsView: UIView, DJINNIDEMORepositionListener {
         swipeDownRecognizer.addTarget(self, action: #selector(swipeDown))
         swipeDownRecognizer.direction = .Down
         addGestureRecognizer(swipeDownRecognizer)
-    }
-    
-    private func removeViews(inout uiViews:[UIImageView]) {
-        for view in uiViews {
-            view.removeFromSuperview()
-        }
-        uiViews.removeAll(keepCapacity: true)
-    }
-    
-    private func createImgViews(totalPoints: Int32, pointSize: Int) {
-        let team1Img = UIImage(named: team1ImgName)
-        let team2Img = UIImage(named: team2ImgName)
-        
-        for _ in 0..<totalPoints {
-            let team1ImgView = UIImageView(image: team1Img!)
-            team1ImgView.frame = CGRect(x: 0, y: 0, width: pointSize, height: pointSize)
-            team1PointsUIViews.append(team1ImgView)
-            addSubview(team1ImgView)
-            
-            let team2ImgView = UIImageView(image: team2Img!)
-            team2ImgView.frame = CGRect(x: 0, y: 0, width: pointSize, height: pointSize)
-            team2PointsUIViews.append(team2ImgView)
-            addSubview(team2ImgView)
-        }
     }
 }
 
