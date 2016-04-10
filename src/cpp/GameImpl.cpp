@@ -4,6 +4,7 @@
 #include "PointListener.hpp"
 #include "PointsCanvasMetrics.hpp"
 #include <memory>
+#include <string>
 
 namespace djinnidemo {
 
@@ -23,6 +24,7 @@ class GameImpl : public Game {
       redPoints_(0),
       bluePoints_(0) {
     createPoints(pointSize_);
+    std::string test = std::to_string(0);
   }
 
   void gainPoint(Team t) {

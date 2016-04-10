@@ -115,8 +115,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        redDiceId = getResources().getIdentifier("reddice", "drawable", getPackageName());
-        blueDiceId = getResources().getIdentifier("bluedice", "drawable", getPackageName());
+        redDiceId = getResources().getIdentifier("red_dice_3d", "drawable", getPackageName());
+        blueDiceId = getResources().getIdentifier("blue_dice_3d", "drawable", getPackageName());
 
         decrementTotalPointsButton = (Button) findViewById(R.id.decrementTotalPointsButton);
         incrementTotalPointsButton = (Button) findViewById(R.id.incrementTotalPointsButton);

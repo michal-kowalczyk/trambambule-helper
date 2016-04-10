@@ -17,8 +17,8 @@ class PointsView: UIView, DJINNIDEMOPointListener {
 
     private var redTeamPointsUIViews:[UIImageView] = []
     private var blueTeamPointsUIViews:[UIImageView] = []
-    private let redTeamImage = UIImage(named: "red-dice.png")
-    private let blueTeamImage = UIImage(named: "blue-dice.png")
+    private let redTeamImage = UIImage(named: "3d-red-dice.png")
+    private let blueTeamImage = UIImage(named: "3d-blue-dice.png")
     private var swipeUpRecognizer = UISwipeGestureRecognizer()
     private var swipeDownRecognizer = UISwipeGestureRecognizer()
     
