@@ -1,121 +1,123 @@
-#include "Game.hpp"
-#include "PointCreationEvent.hpp"
-#include "PointRepositionEvent.hpp"
-#include "PointListener.hpp"
-#include "PointsCanvasMetrics.hpp"
+#include <Game.hpp>
+#include <PointCreationEvent.hpp>
+#include <PointRepositionEvent.hpp>
+#include <PointListener.hpp>
+#include <PointsCanvasMetrics.hpp>
+
 #include <memory>
 #include <string>
 
 namespace djinnidemo
 {
+namespace
+{
+
+class TeamPoints
+{
+public:
+  TeamPoints(const Team team,
+             const int32_t firstPointX,
+             const int32_t firstPointY,
+             const int32_t pointsShift)
+  : score(0)
+  , team_(team)
+  , pt0X_(firstPointX)
+  , pt0Y_(firstPointY)
+  , shift_(pointsShift)
+  {
+    // do nothing
+  }
+
+  PointCreationEvent createEvent(const int32_t pointId, const int32_t pointSize) const
+  {
+    return PointCreationEvent(team_, pointId, pt0X_, pointId * shift_ + pt0Y_, pointSize);
+  }
+
+  PointRepositionEvent repositionEvent(const int32_t pointId, const int32_t newPosition) const
+  {
+    return PointRepositionEvent(team_, pointId, pt0X_, newPosition * shift_ + pt0Y_);
+  }
+
+public:
+  int32_t score;
+
+private:
+  const Team team_;
+  const int32_t pt0X_;
+  const int32_t pt0Y_;
+  const int32_t shift_;
+};
+
+}  // unnamed namespace
 
 class GameImpl : public Game
 {
 public:
   GameImpl(const PointsCanvasMetrics& ui,
            const int32_t totalPoints,
-           const std::shared_ptr<PointListener>& l)
-    : totalPoints_(totalPoints),
-      listener_(l),
-      pointSize_((ui.bottom - ui.top) / (totalPoints + 1) - ui.spacing),
-      redPt0X_(ui.left),
-      redPt0Y_(ui.top),
-      bluePt0X_(ui.right - pointSize_),
-      bluePt0Y_(ui.bottom - pointSize_),
-      redShift_(pointSize_ + ui.spacing),
-      blueShift_(-redShift_),
-      redPoints_(0),
-      bluePoints_(0) {
-    createPoints(pointSize_);
-    std::string test = std::to_string(0);
-  }
-
-  void gainPoint(Team t) override
+           const std::shared_ptr<PointListener>& listener)
+    : totalPoints_(totalPoints)
+    , listener_(listener)
+    , pointSize_((ui.bottom - ui.top) / (totalPoints + 1) - ui.spacing)
+    , redPoints_(Team::RED, ui.left, ui.top, pointSize_ + ui.spacing)
+    , bluePoints_(Team::BLUE, ui.right - pointSize_, ui.bottom - pointSize_, -(pointSize_ + ui.spacing))
   {
-    if (Team::RED == t)
-    {
-      gainPt(t, redPoints_, redPt0X_, redPt0Y_, redShift_);
-    }
-    else
-    {
-      gainPt(t, bluePoints_, bluePt0X_, bluePt0Y_, blueShift_);
-    }
+    createPoints();
   }
 
-  void losePoint(Team t) override
+public:  // from Game
+  void gainPoint(Team team) override
   {
-    if (Team::RED == t)
-    {
-      losePt(t, redPoints_, redPt0X_, redPt0Y_, redShift_);
-    }
-    else
-    {
-      losePt(t, bluePoints_, bluePt0X_, bluePt0Y_, blueShift_);
-    }
+    gainPt(Team::RED == team ? redPoints_ : bluePoints_);
   }
 
- private:
-  void createPoints(const int32_t pointSize)
+  void losePoint(Team team) override
+  {
+    losePt(Team::RED == team ? redPoints_ : bluePoints_);
+  }
+
+private:
+  void createPoints()
   {
     for (int32_t i = 0; i < totalPoints_; ++i)
     {
-      PointCreationEvent e1(Team::RED,
-          i, redPt0X_, i * redShift_ + redPt0Y_, pointSize);
-      listener_->onCreation(e1);
-      PointCreationEvent e2(Team::BLUE,
-          i, bluePt0X_, i * blueShift_ + bluePt0Y_, pointSize);
-      listener_->onCreation(e2);
+      listener_->onCreation(redPoints_.createEvent(i, pointSize_));
+      listener_->onCreation(bluePoints_.createEvent(i, pointSize_));
     }
   }
 
-  void gainPt(const Team t,
-              int32_t& points,
-              const int32_t pt0X,
-              const int32_t pt0Y,
-              const int32_t shift)
+  void gainPt(TeamPoints& points)
   {
-    if (points >= totalPoints_)
+    if (points.score >= totalPoints_)
     {
       return;
     }
-    ++points;
-    const int32_t pointId = totalPoints_ - points;
-    const int32_t pos = pointId + 1;
-    const PointRepositionEvent e(t, pointId, pt0X, pos * shift + pt0Y);
-    listener_->onReposition(e);
+    ++points.score;
+    const int32_t pointId = totalPoints_ - points.score;
+    const int32_t newPosition = pointId + 1;
+    listener_->onReposition(points.repositionEvent(pointId, newPosition));
   }
 
-  void losePt(const Team t,
-              int32_t& points,
-              const int32_t pt0X,
-              const int32_t pt0Y,
-              const int32_t shift)
+  void losePt(TeamPoints& points)
   {
-    if (points <= 0)
+    if (points.score <= 0)
     {
       return;
     }
-    const int32_t pointId = totalPoints_ - points;
-    const int32_t pos = pointId;
-    --points;
-    PointRepositionEvent e(t, pointId, pt0X, pos * shift + pt0Y);
-    listener_->onReposition(e);
+    const int32_t pointId = totalPoints_ - points.score;
+    const int32_t newPosition = pointId;
+    --points.score;
+    listener_->onReposition(points.repositionEvent(pointId, newPosition));
   }
 
+private:
   const int32_t totalPoints_;
-
   const std::shared_ptr<PointListener> listener_;
 
   const int32_t pointSize_;
-  const int32_t redPt0X_;
-  const int32_t redPt0Y_;
-  const int32_t bluePt0X_;
-  const int32_t bluePt0Y_;
-  const int32_t redShift_;
-  const int32_t blueShift_;
 
-  int32_t redPoints_;
-  int32_t bluePoints_;
+  TeamPoints redPoints_;
+  TeamPoints bluePoints_;
 };
 
 std::shared_ptr<Game> Game::create(const PointsCanvasMetrics& metrics,
